@@ -6,9 +6,9 @@ print("Welcome! This is the college database!")
 college1 = str(input("Enter the college name:"))
 print(college1)
 
-#Reading the excel sheet 
+#Reading the CSV sheet 
 
-dbx = pandas.read_excel("Colleges SAT GT 1300.xlsx", sheet_name=0)
+dbx = pandas.read_csv("Most-Recent-Cohorts-All-Data-Elements.csv", low_memory=False)
 dbr = dbx.set_index("INSTNM")
 #Filter
 cllg_namedb = dbr.loc[college1, :]
