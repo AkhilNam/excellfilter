@@ -1,37 +1,44 @@
-import pandas;
-import xlsxwriter;
-import openpyxl;
-lmao = 'Random1'
-print("Welcome! This is the college database!")
-college1 = str(input("Enter the college name:"))
-print(college1)
+import pandas
+from thefuzz import fuzz, process
 
-#Reading the CSV sheet 
+SELECT_COLUMNS = {"UNITID", "CITY", "CONTROL", "CCBASIC", "CCUGPROF", "ADM_RATE_ALL", "SATVR75", "SATMT75", "SATMTMID", "SAT_AVG_ALL", "UGDS", "UGDS_WHITE", "UGDS_ASIAN", "TUITIONFEE_IN", "TUITIONFEE_OUT"}
 
-dbx = pandas.read_csv("Most-Recent-Cohorts-All-Data-Elements.csv", low_memory=False)
-dbr = dbx.set_index("INSTNM")
-#Filter
-cllg_namedb = dbr.loc[college1, :]
+print("Welcome! This is the college database.\n")
 
-cllg_namedb = cllg_namedb.loc[{"UNITID", "CITY", "CONTROL", "CCBASIC", "CCUGPROF", "ADM_RATE_ALL", "SATVR75", "SATMT75", "SATMTMID", "SAT_AVG_ALL", "UGDS", "UGDS_WHITE", "UGDS_ASIAN", "TUITIONFEE_IN", "TUITIONFEE_OUT"}]
-
-cllg_in = ''
-
-while cllg_in != 'n':
-    cllg_in = str(input("Do you have another college you want data about? (y or n)"))
-    if cllg_in == 'y':
-        college2 = str(input("What is the name of the college"))
-        print(college2)
-        cllg_namedf = dbr.loc[college2, :]
-        cllg_namedf = cllg_namedf.loc[{"UNITID", "INSTURL", "CITY", "CONTROL", "CCBASIC", "CCUGPROF", "ADM_RATE_ALL", "SATVR75", "SATMT75", "SATMTMID", "SAT_AVG_ALL", "UGDS", "UGDS_WHITE", "UGDS_ASIAN", "TUITIONFEE_IN", "TUITIONFEE_OUT"}]
-        cllg_namedb = pandas.merge(cllg_namedb, cllg_namedf, left_index=True, right_index=True)
+colleges = list()
+while True:
+    college = input("Enter college name (or n if done entering): ")
+    if college == "n":
+        print()
+        break
     else:
-        cllg_namedb.to_excel("cllg.xlsx")
+        colleges.append(college)
 
+if not colleges:
+    exit("\nNo colleges entered. Quitting...")
 
+all_names = list()
+college_db = pandas.read_csv("Most-Recent-Cohorts-All-Data-Elements.csv", low_memory=False)
+db_instnm = college_db.set_index("INSTNM")
+columns = college_db.iloc[:, 3] # select all columns in row 0
 
+first_college_name = colleges.pop(0)
+first_college_name = process.extractOne(first_college_name, list(columns))[0] # try fuzzy match
+print(f"Matched input to '{first_college_name}'")
+all_names.append(first_college_name)
+main_db = db_instnm.loc[first_college_name, :]
+main_db = main_db.loc[SELECT_COLUMNS]
 
+for college_name in colleges:
+    college_name = process.extractOne(college_name, list(columns))[0]
+    print(f"Matched input to '{college_name}'")
+    all_names.append(college_name)
+    college_info = db_instnm.loc[college_name, :].loc[SELECT_COLUMNS]
+    main_db = pandas.merge(main_db, college_info, left_index=True, right_index=True)
 
-
-
-
+print()
+all_names = ", ".join(all_names)
+main_db.to_excel("colleges.xlsx")
+print("===================================")
+print(f"Generated Excel sheet (colleges.xlsx) from {all_names}")
+print("===================================")
